@@ -66,6 +66,18 @@ public class FloatingTextSnippet {
 		txt1.getText().setMessage("Out of the box floating text");
 		txt1.getText().setText("this is text");
 
+		final FloatingText txtGroup1 = new FloatingText(group, SWT.BORDER);
+		txtGroup1.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, false));
+		txtGroup1.getText().setMessage("Email");
+		txtGroup1.setGroupText("Required");
+		txtGroup1.getGroupLabel().setForeground(txtGroup1.getDisplay().getSystemColor(SWT.COLOR_GRAY));
+
+		final FloatingText txtGroup2 = new FloatingText(group, SWT.BORDER | SWT.SEPARATOR);
+		txtGroup2.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, false));
+		txtGroup2.getText().setMessage("First Name");
+		txtGroup2.setGroupText("Optional");
+		txtGroup2.getGroupLabel().setForeground(txtGroup2.getDisplay().getSystemColor(SWT.COLOR_GRAY));
+
 		Group group2 = new Group(group, SWT.NONE);
 		GridData layoutData = new GridData(SWT.FILL, SWT.FILL, true, false);
 		layoutData.verticalSpan = 2;
@@ -134,6 +146,16 @@ public class FloatingTextSnippet {
 		final FloatingText passw = new FloatingText(group, SWT.PASSWORD);
 		passw.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, false));
 		passw.getText().setMessage("Password - Borderless");
+
+		final FloatingText txtCharCount = new FloatingText(group, SWT.BORDER);
+		txtCharCount.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, false));
+		txtCharCount.getText().setMessage("Comment (max 100 chars)");
+		txtCharCount.setGroupText("0/100");
+		txtCharCount.getGroupLabel().setForeground(txtCharCount.getDisplay().getSystemColor(SWT.COLOR_GRAY));
+		txtCharCount.getText().addListener(SWT.Modify, e -> {
+			int length = txtCharCount.getText().getText().length();
+			txtCharCount.setGroupText(length + "/100");
+		});
 
 		final FloatingText flip = new FloatingText(group, SWT.BORDER | SWT.RIGHT_TO_LEFT | SWT.SEPARATOR);
 		flip.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, false));

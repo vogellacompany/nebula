@@ -66,9 +66,11 @@ import org.eclipse.swt.widgets.Widget;
 public class FloatingText extends Composite {
 	private Text fText;
 	private Label fLabel;
+	private Label fGroupLabel;
 	private int fStyle;
 	private int fLabelToTextRatio = 90;
 	private Font fLabelFont;
+	private Font fGroupLabelFont;
 
 	/**
 	 * Constructs a new instance of this class given its parent and a style value
@@ -127,12 +129,18 @@ public class FloatingText extends Composite {
 		fLabel.addDisposeListener(e -> {
 			if (fLabelFont != null)
 				fLabelFont.dispose();
+			if (fGroupLabelFont != null)
+				fGroupLabelFont.dispose();
 		});
+		fGroupLabel = createGroupLabel(pStyle);
 		fText = new Text(this, removeStyles(pStyle, SWT.BORDER, SWT.SEPARATOR));
 		fText.setLayoutData(getTextLayoutData());
 		fLabel.setBackground(fText.getBackground());
 		fLabel.setForeground(fText.getForeground());
 		fLabel.setLayoutData(getLabelLayoutData());
+		fGroupLabel.setBackground(fText.getBackground());
+		fGroupLabel.setForeground(fText.getForeground());
+		fGroupLabel.setLayoutData(getGroupLabelLayoutData());
 		fText.addListener(SWT.FocusIn, e -> setLabelText(true));
 		fText.addListener(SWT.FocusOut, e -> setLabelText(false));
 		fText.addListener(SWT.Modify, e -> {
@@ -178,8 +186,28 @@ public class FloatingText extends Composite {
 		};
 	}
 
+	private Label createGroupLabel(final int pStyle) {
+		return new Label(this, SWT.NONE | SWT.RIGHT | ((pStyle & SWT.LEFT_TO_RIGHT) > 0 ? SWT.LEFT_TO_RIGHT : SWT.NONE)
+				| ((pStyle & SWT.RIGHT_TO_LEFT) > 0 ? SWT.RIGHT_TO_LEFT : SWT.NONE)) {
+
+			@Override
+			protected void checkSubclass() {
+			}
+
+			@Override
+			public Point computeSize(int pWHint, int pHHint, boolean pChanged) {
+				if (fGroupLabel.getText().isEmpty()) {
+					return new Point(0, 0);
+				}
+				Point result = super.computeSize(pWHint, pHHint, pChanged);
+				result.y = ((GridData) fGroupLabel.getLayoutData()).heightHint;
+				return result;
+			}
+		};
+	}
+
 	private GridLayout createLayout(final int pStyle) {
-		GridLayout gridLayout = new GridLayout(1, false);
+		GridLayout gridLayout = new GridLayout(2, false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		gridLayout.horizontalSpacing = 0;
@@ -214,6 +242,13 @@ public class FloatingText extends Composite {
 		fLabelFont = findFittingFont(fLabel);
 		fLabel.setFont(fLabelFont);
 		fLabel.setText(message);
+		
+		// Also update group label font if it has text
+		if (!fGroupLabel.getText().isEmpty()) {
+			fGroupLabelFont = findFittingFont(fGroupLabel);
+			fGroupLabel.getFont().dispose();
+			fGroupLabel.setFont(fGroupLabelFont);
+		}
 	}
 
 	public Font findFittingFont(Label label) {
@@ -259,6 +294,12 @@ public class FloatingText extends Composite {
 		return gridData;
 	}
 
+	private GridData getGroupLabelLayoutData() {
+		GridData gridData = new GridData(SWT.FILL, SWT.FILL, false, false);
+		gridData.heightHint = ((fText.computeSize(-1, -1).y) * fLabelToTextRatio) / 100;
+		return gridData;
+	}
+
 	/**
 	 * The default is 90 which means that the label height is 90% of the text text
 	 * height.
@@ -291,7 +332,7 @@ public class FloatingText extends Composite {
 	}
 
 	private GridData getTextLayoutData() {
-		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1);
+		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1);
 		return gridData;
 	}
 
@@ -313,6 +354,7 @@ public class FloatingText extends Composite {
 	public void setBackgroundColors(Color color) {
 		fText.setBackground(color);
 		fLabel.setBackground(color);
+		fGroupLabel.setBackground(color);
 	}
 
 	@Override
@@ -320,6 +362,7 @@ public class FloatingText extends Composite {
 		super.setEnabled(pEnabled);
 		fText.setEnabled(pEnabled);
 		fLabel.setEnabled(pEnabled);
+		fGroupLabel.setEnabled(pEnabled);
 	}
 
 	/**
@@ -330,6 +373,7 @@ public class FloatingText extends Composite {
 	public void setForegroundColors(Color color) {
 		fText.setForeground(color);
 		fLabel.setForeground(color);
+		fGroupLabel.setForeground(color);
 	}
 
 	private void setLabelText(boolean pFocus) {
@@ -353,7 +397,52 @@ public class FloatingText extends Composite {
 	public void setRatio(int ratio) {
 		fLabelToTextRatio = ratio;
 		fLabel.setLayoutData(getLabelLayoutData());
+		fGroupLabel.setLayoutData(getGroupLabelLayoutData());
 		requestLayout();
+	}
+
+	/**
+	 * Gets the group label widget. The group label appears on the right side of the
+	 * floating label, typically used to show helper text or character count.
+	 * 
+	 * @return the group label widget
+	 */
+	public Label getGroupLabel() {
+		return fGroupLabel;
+	}
+
+	/**
+	 * Sets the text for the group label. The group label appears on the right side
+	 * of the floating label, aligned to the right. This is useful for displaying
+	 * helper text, character counts, or other supplementary information following
+	 * Material Design guidelines.
+	 * 
+	 * @param text the text to display in the group label
+	 * @return this FloatingText instance for method chaining
+	 */
+	public FloatingText setGroupText(String text) {
+		fGroupLabel.setText(text == null ? "" : text);
+		if (!text.isEmpty() && !fLabel.getText().isEmpty()) {
+			// Update font for group label if main label is already visible
+			if (fGroupLabel.getSize().y > 0) {
+				if (fGroupLabelFont != null) {
+					fGroupLabelFont.dispose();
+				}
+				fGroupLabelFont = findFittingFont(fGroupLabel);
+				fGroupLabel.setFont(fGroupLabelFont);
+			}
+		}
+		requestLayout();
+		return this;
+	}
+
+	/**
+	 * Gets the current text of the group label.
+	 * 
+	 * @return the text of the group label
+	 */
+	public String getGroupText() {
+		return fGroupLabel.getText();
 	}
 
 	/**
